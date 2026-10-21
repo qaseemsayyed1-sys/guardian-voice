@@ -16,6 +16,7 @@ function App() {
   const [generatedCode, setGeneratedCode] = useState(""); 
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [currentPlaylist, setCurrentPlaylist] = useState(null);
+  const [isGuest, setIsGuest] = useState(false);
   
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
@@ -83,6 +84,9 @@ function App() {
       setMessages((prev) => [...prev, { sender: 'ai', text: data.reply }]);
       speak(data.reply);
 
+      if (data.uiUpdate?.guestMode) {
+        setIsGuest(true);
+      }
       if (data.uiUpdate?.showCode) {
         setShowCodeBox(true);
         setGeneratedCode(data.uiUpdate.code);
@@ -201,9 +205,16 @@ function App() {
                       <p className={`text-xs font-medium tracking-wide uppercase ${showEmergency ? 'text-red-200' : 'text-stone-500'}`}>Alexa+ Simulator</p>
                   </div>
               </div>
-              <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-xs px-4 py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
-                  {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
-              </button>
+              <div className="flex gap-2">
+                  {isGuest && (
+                      <span className="bg-amber-100 text-amber-800 text-xs px-3 py-1.5 rounded-lg font-bold uppercase tracking-wide border border-amber-300">
+                          Guest Mode
+                      </span>
+                  )}
+                  <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-xs px-4 py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
+                      {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
+                  </button>
+              </div>
           </div>
 
           {currentPlaylist && (
@@ -237,7 +248,7 @@ function App() {
                 <button type="button" onClick={startListening} className={`p-4 rounded-xl transition-all ${isListening ? 'bg-red-700 text-white animate-pulse' : showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 </button>
-                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Say: 'Play lofi', 'Help', or 'Unlock door'" className={`flex-1 border rounded-xl px-5 py-4 focus:outline-none focus:ring-2 transition-all text-sm ${showEmergency ? 'bg-red-800 border-red-700 text-white placeholder-red-300 focus:ring-white/20 focus:border-white' : 'bg-[#F4F1EA] border-stone-300 text-stone-900 placeholder-stone-400 focus:ring-stone-900/10 focus:border-stone-900'}`} />
+                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Say: 'I am guest', 'Help', or 'Unlock door'" className={`flex-1 border rounded-xl px-5 py-4 focus:outline-none focus:ring-2 transition-all text-sm ${showEmergency ? 'bg-red-800 border-red-700 text-white placeholder-red-300 focus:ring-white/20 focus:border-white' : 'bg-[#F4F1EA] border-stone-300 text-stone-900 placeholder-stone-400 focus:ring-stone-900/10 focus:border-stone-900'}`} />
                 <button type="submit" className={`px-8 py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center ${showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 hover:bg-stone-800 text-[#F4F1EA]'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                 </button>
@@ -252,6 +263,8 @@ function App() {
               {messages.map((msg, i) => {
                   if (msg.text.includes("Playing")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Music playback started.</p>;
                   if (msg.text.includes("weather")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Weather fetched.</p>;
+                  if (msg.text.includes("Guest mode")) return <p key={i} className="text-amber-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 block"></span>[SECURITY] Guest mode enabled.</p>;
+                  if (msg.text.includes("Access Denied")) return <p key={i} className="text-red-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-400 block"></span>[SECURITY] Unauthorized access blocked.</p>;
                   if (msg.text.includes("Emergency")) return <p key={i} className="text-red-500 mb-1.5 flex items-center gap-2 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-red-500 block"></span>[CRITICAL] Emergency protocol engaged!</p>;
                   if (msg.text.includes("4-digit code")) return <p key={i} className="text-amber-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 block"></span>[HIGH-RISK] Awaiting verification.</p>;
                   if (msg.text.includes("vetoed")) return <p key={i} className="text-red-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-400 block"></span>[VETO] Action blocked by human.</p>;
