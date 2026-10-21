@@ -85,6 +85,9 @@ function App() {
       setMessages((prev) => [...prev, { sender: 'ai', text: data.reply }]);
       speak(data.reply);
 
+      if (data.uiUpdate?.silentSOS) {
+        setMessages((prev) => [...prev, { sender: 'ai', text: '[SILENT SOS SENT TO AUTHORITIES]' }]);
+      }
       if (data.uiUpdate?.guestMode) setIsGuest(true);
       if (data.uiUpdate?.triggerLockdown) {
         setIsLockdown(true);
@@ -304,6 +307,7 @@ function App() {
                   if (msg.text.includes("approved")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[ACCEPT] Action approved.</p>;
                   if (msg.text.includes("verified")) return <p key={i} className="text-blue-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 block"></span>[SECURITY] Identity verified.</p>;
                   if (msg.text.includes("lockdown")) return <p key={i} className="text-red-600 mb-1.5 flex items-center gap-2 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-red-600 block"></span>[CRITICAL] System Lockdown Initiated!</p>;
+                  if (msg.text.includes("SILENT SOS")) return <p key={i} className="text-red-600 mb-1.5 flex items-center gap-2 animate-ping"><span className="w-1.5 h-1.5 rounded-full bg-red-600 block"></span>[CRITICAL] Silent SOS transmitted!</p>;
                   return null;
               })}
           </div>
