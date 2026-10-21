@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const BACKEND_URL = 'https://guardian-voice-backend.onrender.com';
+const BACKEND_URL = 'https://guardian-voice-backend.onrender.com/api/chat';
 
 function App() {
   const [messages, setMessages] = useState([
@@ -20,7 +20,6 @@ function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     
-    // Browser ko pehle se voices load karne do
     if ('speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
     }
@@ -192,7 +191,7 @@ function App() {
                   </div>
               </div>
               <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-xs px-4 py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
-                  {isAutoPlaying ? 'Running...' : '▶ Auto-Demo'}
+                  {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
               </button>
           </div>
           
@@ -234,7 +233,7 @@ function App() {
         <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col bg-[#F4F1EA] relative">
           
           <div className="mb-8 bg-stone-900 rounded-2xl p-5 shadow-inner h-40 overflow-y-auto font-mono text-xs border border-stone-800">
-              <p className="text-stone-500 mb-3 tracking-widest uppercase text-[10px]">// System Security Logs</p>
+              <p className="text-stone-500 mb-3 tracking-widest uppercase text-[10px]">System Security Logs</p>
               {messages.map((msg, i) => {
                   if (msg.text.includes("Playing") || msg.text.includes("currently")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Action executed.</p>;
                   if (msg.text.includes("4-digit code")) return <p key={i} className="text-amber-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 block"></span>[HIGH-RISK] Awaiting verification.</p>;
