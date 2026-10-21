@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const BACKEND_URL = 'http://localhost:3000/api/chat';
+const BACKEND_URL = 'https://guardian-voice-backend.onrender.com';
 
 function App() {
   const [messages, setMessages] = useState([
