@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const BACKEND_URL = 'https://guardian-voice-backend.onrender.com/api/chat';
+const RESET_URL = 'https://guardian-voice-backend.onrender.com/api/reset';
 
 function App() {
   const [messages, setMessages] = useState([
@@ -27,6 +28,11 @@ function App() {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
     }
+    
+    axios.post(RESET_URL)
+      .then(() => console.log("Backend session reset"))
+      .catch(err => console.log("Reset failed"));
+      
   }, [messages]);
 
   const speak = (text) => {
