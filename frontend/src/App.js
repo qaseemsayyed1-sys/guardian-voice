@@ -17,6 +17,7 @@ function App() {
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [currentPlaylist, setCurrentPlaylist] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
+  const [isLockdown, setIsLockdown] = useState(false);
   
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
@@ -86,6 +87,10 @@ function App() {
 
       if (data.uiUpdate?.guestMode) {
         setIsGuest(true);
+      }
+      if (data.uiUpdate?.triggerLockdown) {
+        setIsLockdown(true);
+        setTimeout(() => setIsLockdown(false), 5000); 
       }
       if (data.uiUpdate?.showCode) {
         setShowCodeBox(true);
@@ -191,6 +196,15 @@ function App() {
       
       <audio ref={audioRef} />
 
+      {isLockdown && (
+        <div className="fixed inset-0 z-50 bg-red-950/90 backdrop-blur-md flex flex-col items-center justify-center animate-pulse">
+            <svg className="w-32 h-32 text-red-500 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <h1 className="text-red-500 font-mono font-bold text-5xl tracking-widest mb-4">LOCKDOWN</h1>
+            <p className="text-red-200 font-mono text-lg">SECURITY BREACH DETECTED</p>
+            <p className="text-red-400 font-mono text-sm mt-4 animate-ping">Isolating system...</p>
+        </div>
+      )}
+
       <div className={`w-full max-w-6xl rounded-3xl shadow-xl border flex flex-col md:flex-row overflow-hidden h-[90vh] ${showEmergency ? 'bg-red-950 border-red-700' : 'bg-[#FDFCF8] border-stone-200 shadow-stone-200/60'}`}>
         
         <div className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r ${showEmergency ? 'border-red-800' : 'border-stone-200'}`}>
@@ -270,6 +284,7 @@ function App() {
                   if (msg.text.includes("vetoed")) return <p key={i} className="text-red-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-400 block"></span>[VETO] Action blocked by human.</p>;
                   if (msg.text.includes("approved")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[ACCEPT] Action approved.</p>;
                   if (msg.text.includes("verified")) return <p key={i} className="text-blue-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 block"></span>[SECURITY] Identity verified.</p>;
+                  if (msg.text.includes("lockdown")) return <p key={i} className="text-red-600 mb-1.5 flex items-center gap-2 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-red-600 block"></span>[CRITICAL] System Lockdown Initiated!</p>;
                   return null;
               })}
           </div>
