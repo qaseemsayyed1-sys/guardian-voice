@@ -15,6 +15,7 @@ function App() {
   const [isListening, setIsListening] = useState(false);
   const [generatedCode, setGeneratedCode] = useState(""); 
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [currentPlaylist, setCurrentPlaylist] = useState(null);
   
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
@@ -36,14 +37,6 @@ function App() {
       utterance.rate = 1.0; 
       utterance.pitch = 1.1; 
       window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const playAudio = () => {
-    // A royalty free jazz track URL for demo
-    if (audioRef.current) {
-      audioRef.current.volume = 0.3;
-      audioRef.current.play().catch(e => console.log("Audio play blocked by browser"));
     }
   };
 
@@ -81,7 +74,7 @@ function App() {
     setMessages((prev) => [...prev, { sender: 'user', text: userMessage }]);
     setInput('');
     setIsLoading(true);
-    setShowEmergency(false); // Reset emergency on new message
+    setShowEmergency(false);
 
     try {
       const response = await axios.post(BACKEND_URL, { message: userMessage });
@@ -103,7 +96,12 @@ function App() {
         setShowCodeBox(false);
       }
       if (data.uiUpdate?.playMusic) {
-        playAudio();
+        if (audioRef.current) {
+          audioRef.current.src = data.uiUpdate.trackUrl;
+          audioRef.current.volume = 0.3;
+          audioRef.current.play().catch(e => console.log("Audio blocked"));
+          setCurrentPlaylist(data.uiUpdate.playlistName); 
+        }
       }
       if (data.uiUpdate?.showEmergency) {
         setShowEmergency(true);
@@ -187,12 +185,10 @@ function App() {
   return (
     <div className={`min-h-screen flex justify-center items-center p-4 md:p-8 font-sans transition-colors duration-500 ${showEmergency ? 'bg-red-900' : 'bg-[#F4F1EA] text-stone-800'}`}>
       
-      {/* Hidden Audio Player for Music */}
-      <audio ref={audioRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop />
+      <audio ref={audioRef} />
 
       <div className={`w-full max-w-6xl rounded-3xl shadow-xl border flex flex-col md:flex-row overflow-hidden h-[90vh] ${showEmergency ? 'bg-red-950 border-red-700' : 'bg-[#FDFCF8] border-stone-200 shadow-stone-200/60'}`}>
         
-        {/* LEFT PANEL */}
         <div className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r ${showEmergency ? 'border-red-800' : 'border-stone-200'}`}>
           
           <div className={`p-6 border-b flex justify-between items-center z-10 ${showEmergency ? 'bg-red-900 border-red-800 text-white' : 'bg-[#FDFCF8] border-stone-200'}`}>
@@ -209,6 +205,20 @@ function App() {
                   {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
               </button>
           </div>
+
+          {currentPlaylist && (
+            <div className="bg-[#F4F1EA] border-b border-stone-200 px-6 py-3 flex items-center justify-between animate-in slide-in-from-top duration-300">
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1 h-4 items-end">
+                  <div className="w-1 bg-stone-800 animate-[bounce_1s_infinite] h-full"></div>
+                  <div className="w-1 bg-stone-800 animate-[bounce_1.2s_infinite] h-2/3"></div>
+                  <div className="w-1 bg-stone-800 animate-[bounce_0.8s_infinite] h-full"></div>
+                </div>
+                <span className="text-xs font-bold tracking-widest uppercase text-stone-600">Now Playing: {currentPlaylist}</span>
+              </div>
+              <button onClick={() => { audioRef.current.pause(); setCurrentPlaylist(null); }} className="text-xs font-bold text-red-600 hover:text-red-800 uppercase">Stop</button>
+            </div>
+          )}
           
           <div className={`flex-1 overflow-y-auto p-6 space-y-6 ${showEmergency ? 'bg-red-950/50' : 'bg-[#F4F1EA]/50'}`}>
             {messages.map((msg, index) => (
@@ -227,7 +237,7 @@ function App() {
                 <button type="button" onClick={startListening} className={`p-4 rounded-xl transition-all ${isListening ? 'bg-red-700 text-white animate-pulse' : showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 </button>
-                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Say: 'Play music', 'Help', or 'Unlock door'" className={`flex-1 border rounded-xl px-5 py-4 focus:outline-none focus:ring-2 transition-all text-sm ${showEmergency ? 'bg-red-800 border-red-700 text-white placeholder-red-300 focus:ring-white/20 focus:border-white' : 'bg-[#F4F1EA] border-stone-300 text-stone-900 placeholder-stone-400 focus:ring-stone-900/10 focus:border-stone-900'}`} />
+                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Say: 'Play lofi', 'Help', or 'Unlock door'" className={`flex-1 border rounded-xl px-5 py-4 focus:outline-none focus:ring-2 transition-all text-sm ${showEmergency ? 'bg-red-800 border-red-700 text-white placeholder-red-300 focus:ring-white/20 focus:border-white' : 'bg-[#F4F1EA] border-stone-300 text-stone-900 placeholder-stone-400 focus:ring-stone-900/10 focus:border-stone-900'}`} />
                 <button type="submit" className={`px-8 py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center ${showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 hover:bg-stone-800 text-[#F4F1EA]'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                 </button>
@@ -235,7 +245,6 @@ function App() {
           </div>
         </div>
 
-        {/* RIGHT PANEL */}
         <div className={`w-full md:w-1/2 p-6 md:p-8 flex flex-col relative ${showEmergency ? 'bg-red-950' : 'bg-[#F4F1EA]'}`}>
           
           <div className="mb-8 bg-stone-900 rounded-2xl p-5 shadow-inner h-40 overflow-y-auto font-mono text-xs border border-stone-800">
