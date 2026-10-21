@@ -10,16 +10,17 @@ function App() {
   const [input, setInput] = useState('');
   const [showCodeBox, setShowCodeBox] = useState(false);
   const [showVetoPanel, setShowVetoPanel] = useState(false);
+  const [showEmergency, setShowEmergency] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [generatedCode, setGeneratedCode] = useState(""); 
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   
   const messagesEndRef = useRef(null);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    
     if ('speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
     }
@@ -29,17 +30,20 @@ function App() {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel(); 
       const utterance = new SpeechSynthesisUtterance(text);
-      
       const voices = window.speechSynthesis.getVoices();
       const alexaVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Zira'));
-      if (alexaVoice) {
-        utterance.voice = alexaVoice;
-      }
-
+      if (alexaVoice) utterance.voice = alexaVoice;
       utterance.rate = 1.0; 
       utterance.pitch = 1.1; 
-      
       window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const playAudio = () => {
+    // A royalty free jazz track URL for demo
+    if (audioRef.current) {
+      audioRef.current.volume = 0.3;
+      audioRef.current.play().catch(e => console.log("Audio play blocked by browser"));
     }
   };
 
@@ -77,6 +81,7 @@ function App() {
     setMessages((prev) => [...prev, { sender: 'user', text: userMessage }]);
     setInput('');
     setIsLoading(true);
+    setShowEmergency(false); // Reset emergency on new message
 
     try {
       const response = await axios.post(BACKEND_URL, { message: userMessage });
@@ -97,9 +102,15 @@ function App() {
         setShowVetoPanel(false);
         setShowCodeBox(false);
       }
+      if (data.uiUpdate?.playMusic) {
+        playAudio();
+      }
+      if (data.uiUpdate?.showEmergency) {
+        setShowEmergency(true);
+      }
 
     } catch (error) {
-      setMessages((prev) => [...prev, { sender: 'ai', text: 'Connection error.' }]);
+      setMessages((prev) => [...prev, { sender: 'ai', text: 'Connection error. Wake up backend.' }]);
     }
     setIsLoading(false);
   };
@@ -174,68 +185,65 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] text-stone-800 flex justify-center items-center p-4 md:p-8 font-sans">
+    <div className={`min-h-screen flex justify-center items-center p-4 md:p-8 font-sans transition-colors duration-500 ${showEmergency ? 'bg-red-900' : 'bg-[#F4F1EA] text-stone-800'}`}>
       
-      <div className="w-full max-w-6xl bg-[#FDFCF8] rounded-3xl shadow-xl shadow-stone-200/60 border border-stone-200 flex flex-col md:flex-row overflow-hidden h-[90vh]">
+      {/* Hidden Audio Player for Music */}
+      <audio ref={audioRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop />
+
+      <div className={`w-full max-w-6xl rounded-3xl shadow-xl border flex flex-col md:flex-row overflow-hidden h-[90vh] ${showEmergency ? 'bg-red-950 border-red-700' : 'bg-[#FDFCF8] border-stone-200 shadow-stone-200/60'}`}>
         
-        <div className="w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-stone-200">
+        {/* LEFT PANEL */}
+        <div className={`w-full md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r ${showEmergency ? 'border-red-800' : 'border-stone-200'}`}>
           
-          <div className="p-6 border-b border-stone-200 flex justify-between items-center bg-[#FDFCF8] z-10">
+          <div className={`p-6 border-b flex justify-between items-center z-10 ${showEmergency ? 'bg-red-900 border-red-800 text-white' : 'bg-[#FDFCF8] border-stone-200'}`}>
               <div className="flex items-center gap-3">
-                  <div className="bg-stone-900 p-2.5 rounded-xl text-[#F4F1EA]">
+                  <div className={`p-2.5 rounded-xl ${showEmergency ? 'bg-white text-red-900' : 'bg-stone-900 text-[#F4F1EA]'}`}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                   </div>
                   <div>
-                      <h1 className="text-xl font-bold text-stone-900 tracking-tight">Guardian Voice</h1>
-                      <p className="text-xs text-stone-500 font-medium tracking-wide uppercase">Alexa+ Simulator</p>
+                      <h1 className={`text-xl font-bold tracking-tight ${showEmergency ? 'text-white' : 'text-stone-900'}`}>Guardian Voice</h1>
+                      <p className={`text-xs font-medium tracking-wide uppercase ${showEmergency ? 'text-red-200' : 'text-stone-500'}`}>Alexa+ Simulator</p>
                   </div>
               </div>
-              <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-xs px-4 py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
+              <button onClick={runAutoDemo} disabled={isAutoPlaying} className={`text-xs px-4 py-2 rounded-lg font-bold transition-all uppercase tracking-wide ${isAutoPlaying ? 'bg-stone-200 text-stone-400' : showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 text-[#F4F1EA] hover:bg-stone-800'}`}>
                   {isAutoPlaying ? 'Running...' : 'Auto-Demo'}
               </button>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#F4F1EA]/50">
+          <div className={`flex-1 overflow-y-auto p-6 space-y-6 ${showEmergency ? 'bg-red-950/50' : 'bg-[#F4F1EA]/50'}`}>
             {messages.map((msg, index) => (
               <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${msg.sender === 'user' ? 'bg-stone-900 text-[#F4F1EA] rounded-br-none shadow-md' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm'}`}>
+                <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${msg.sender === 'user' ? (showEmergency ? 'bg-red-700 text-white rounded-br-none' : 'bg-stone-900 text-[#F4F1EA] rounded-br-none shadow-md') : (showEmergency ? 'bg-red-900 text-red-100 border border-red-700 rounded-bl-none' : 'bg-white border border-stone-200 text-stone-700 rounded-bl-none shadow-sm')}`}>
                   {msg.text}
                 </div>
               </div>
             ))}
-            {isLoading && <div className="text-stone-400 text-sm animate-pulse italic">Guardian is processing...</div>}
+            {isLoading && <div className={`text-sm animate-pulse italic ${showEmergency ? 'text-red-300' : 'text-stone-400'}`}>Guardian is processing...</div>}
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-6 bg-[#FDFCF8] border-t border-stone-200">
+          <div className={`p-6 border-t ${showEmergency ? 'bg-red-900 border-red-800' : 'bg-[#FDFCF8] border-stone-200'}`}>
               <form onSubmit={handleSend} className="flex gap-3">
-                <button 
-                  type="button" 
-                  onClick={startListening}
-                  className={`p-4 rounded-xl transition-all ${isListening ? 'bg-red-700 text-white animate-pulse shadow-lg shadow-red-700/20' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}
-                >
+                <button type="button" onClick={startListening} className={`p-4 rounded-xl transition-all ${isListening ? 'bg-red-700 text-white animate-pulse' : showEmergency ? 'bg-red-800 text-red-200 hover:bg-red-700' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 </button>
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Say: 'Unlock the door' or 'Play music'"
-                  className="flex-1 bg-[#F4F1EA] border border-stone-300 rounded-xl px-5 py-4 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-900 transition-all text-sm"
-                />
-                <button type="submit" className="bg-stone-900 hover:bg-stone-800 text-[#F4F1EA] px-8 py-4 rounded-xl font-bold shadow-lg shadow-stone-900/10 transition-all flex items-center justify-center">
+                <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Say: 'Play music', 'Help', or 'Unlock door'" className={`flex-1 border rounded-xl px-5 py-4 focus:outline-none focus:ring-2 transition-all text-sm ${showEmergency ? 'bg-red-800 border-red-700 text-white placeholder-red-300 focus:ring-white/20 focus:border-white' : 'bg-[#F4F1EA] border-stone-300 text-stone-900 placeholder-stone-400 focus:ring-stone-900/10 focus:border-stone-900'}`} />
+                <button type="submit" className={`px-8 py-4 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center ${showEmergency ? 'bg-white text-red-900 hover:bg-red-100' : 'bg-stone-900 hover:bg-stone-800 text-[#F4F1EA]'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                 </button>
               </form>
           </div>
         </div>
 
-        <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col bg-[#F4F1EA] relative">
+        {/* RIGHT PANEL */}
+        <div className={`w-full md:w-1/2 p-6 md:p-8 flex flex-col relative ${showEmergency ? 'bg-red-950' : 'bg-[#F4F1EA]'}`}>
           
           <div className="mb-8 bg-stone-900 rounded-2xl p-5 shadow-inner h-40 overflow-y-auto font-mono text-xs border border-stone-800">
               <p className="text-stone-500 mb-3 tracking-widest uppercase text-[10px]">System Security Logs</p>
               {messages.map((msg, i) => {
-                  if (msg.text.includes("Playing") || msg.text.includes("currently")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Action executed.</p>;
+                  if (msg.text.includes("Playing")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Music playback started.</p>;
+                  if (msg.text.includes("weather")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[LOW-RISK] Weather fetched.</p>;
+                  if (msg.text.includes("Emergency")) return <p key={i} className="text-red-500 mb-1.5 flex items-center gap-2 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-red-500 block"></span>[CRITICAL] Emergency protocol engaged!</p>;
                   if (msg.text.includes("4-digit code")) return <p key={i} className="text-amber-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 block"></span>[HIGH-RISK] Awaiting verification.</p>;
                   if (msg.text.includes("vetoed")) return <p key={i} className="text-red-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-red-400 block"></span>[VETO] Action blocked by human.</p>;
                   if (msg.text.includes("approved")) return <p key={i} className="text-emerald-400 mb-1.5 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 block"></span>[ACCEPT] Action approved.</p>;
@@ -246,7 +254,15 @@ function App() {
 
           <div className="flex-1 flex flex-col items-center justify-center">
               
-              {showCodeBox && (
+              {showEmergency && (
+                <div className="bg-red-900 border-2 border-red-500 p-8 rounded-3xl w-full max-w-md text-center shadow-2xl shadow-red-900/50 animate-pulse">
+                  <svg className="w-20 h-20 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                  <h2 className="text-white font-bold text-3xl mb-2 tracking-tight">EMERGENCY ALERT</h2>
+                  <p className="text-red-200">Emergency contacts have been notified.</p>
+                </div>
+              )}
+
+              {!showEmergency && showCodeBox && (
               <div className="bg-[#FDFCF8] border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-xl shadow-stone-200/50 animate-in fade-in zoom-in duration-300">
                   <div className="w-16 h-16 bg-red-100 text-red-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-red-200">
                       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
@@ -259,7 +275,7 @@ function App() {
               </div>
               )}
 
-              {showVetoPanel && (
+              {!showEmergency && showVetoPanel && (
               <div className="bg-[#FDFCF8] border border-stone-200 p-8 rounded-3xl w-full max-w-md text-center shadow-xl shadow-stone-200/50 animate-in fade-in zoom-in duration-300">
                   <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-5 border border-amber-200">
                       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
@@ -278,7 +294,7 @@ function App() {
               </div>
               )}
 
-              {!showCodeBox && !showVetoPanel && (
+              {!showEmergency && !showCodeBox && !showVetoPanel && (
               <div className="text-center text-stone-400">
                   <div className="w-24 h-24 mx-auto mb-6 bg-[#FDFCF8] rounded-full flex items-center justify-center shadow-sm border border-stone-200">
                       <svg className="w-10 h-10 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
