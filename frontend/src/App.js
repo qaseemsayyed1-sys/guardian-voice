@@ -24,16 +24,19 @@ function App() {
   const audioRef = useRef(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isLoading, showCodeBox, showVetoPanel, showEmergency, isLockdown]);
+
+  useEffect(() => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
     }
-    
     axios.post(RESET_URL)
       .then(() => console.log("Backend session reset"))
       .catch(err => console.log("Reset failed"));
-      
-  }, [messages]);
+  }, []);
 
   const speak = (text) => {
     if ('speechSynthesis' in window) {
